@@ -26,7 +26,8 @@ from diffusers import Flux2KleinPipeline
 
 WEIGHTS_REPO = "xmz111/ReChannel"                      # per-task LoRA + linear head (bf16, public)
 KLEIN_REPO = "black-forest-labs/FLUX.2-klein-base-4B"  # frozen backbone
-LORA_SCALE = 0.5                                        # alpha/rank, same for all released tasks
+LORA_SCALE = 0.5  # alpha/rank, same for all released tasks. Checkpoints store RAW LoRA A/B
+                  # (no scaling baked in), so the merge below applies this factor exactly once.
 
 # task -> (weights subfolder, output channels K, patch size, uses text condition)
 TASKS = {
@@ -48,8 +49,10 @@ class ThinPixelTail(nn.Module):
         self.unpatch_linear = nn.Linear(128, patch_size * patch_size * out_channels)
 
     def forward(self, tokens, grid_hw):
-        B, N, _ = tokens.shape
+        B, N, C = tokens.shape
         Ht, Wt = grid_hw
+        assert C == 128, f"expected token dim 128, got {C}"
+        assert N == Ht * Wt, f"token count {N} != grid {Ht}x{Wt}={Ht * Wt}"
         x = self.unpatch_linear(tokens).reshape(B, Ht, Wt, self.ps, self.ps, self.oc)
         x = x.permute(0, 1, 3, 2, 4, 5).contiguous().reshape(B, Ht * self.ps, Wt * self.ps, self.oc)
         return x.permute(0, 3, 1, 2).contiguous()
@@ -138,8 +141,11 @@ class ReChannel:
         return tail(out, (Hp, Wp))[0].cpu().float().numpy()
 
     @torch.no_grad()
-    def run(self, image, task, phrase="the object"):
-        """image: HxWx3 uint8 RGB. Returns the raw decoded field (task-native)."""
+    def run(self, image, task, phrase="the object", tta=True):
+        """image: HxWx3 uint8 RGB. Returns the raw decoded field (task-native).
+
+        tta: horizontal-flip test-time augmentation for the non-text tasks (demo default).
+        Set tta=False for a strict single forward pass (e.g. timing)."""
         _, K, ps, use_text = TASKS[task]
         lora, tail = self._load_task(task)
         sd = self.body.state_dict()
@@ -152,15 +158,16 @@ class ReChannel:
             if use_text:                                    # refseg: 512^2 square + text condition
                 rin = np.asarray(Image.fromarray(image).resize((512, 512), Image.BILINEAR))
                 p = self._forward(rin, self._embed_text(phrase), self.txt_ids_T32, tail)
-            else:                                           # depth/normal/matting/saliency: aspect-fit + hflip TTA
+            else:                                           # depth/normal/matting/saliency: aspect-fit (+ optional hflip TTA)
                 H0, W0 = image.shape[:2]
                 Hn, Wn = fit_resolution(H0, W0)
                 rin = np.asarray(Image.fromarray(image).resize((Wn, Hn), Image.BILINEAR))
                 p = self._forward(rin, self.null_emb, self.null_ids, tail)
-                pf = self._forward(rin[:, ::-1].copy(), self.null_emb, self.null_ids, tail)[:, :, ::-1]
-                if task == "normal":
-                    pf[0] = -pf[0]                          # x-channel negates under horizontal flip
-                p = (p + pf) / 2.0
+                if tta:
+                    pf = self._forward(rin[:, ::-1].copy(), self.null_emb, self.null_ids, tail)[:, :, ::-1]
+                    if task == "normal":
+                        pf[0] = -pf[0]                      # x-channel negates under horizontal flip
+                    p = (p + pf) / 2.0
         finally:
             with torch.no_grad():
                 for wk, orig in saved.items():
@@ -208,6 +215,8 @@ def main():
     ap.add_argument("--phrase", default="the object", help="referring expression for refseg")
     ap.add_argument("--out", default="rechannel_out.png")
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--no-tta", dest="tta", action="store_false",
+                    help="disable horizontal-flip TTA (strict single forward pass)")
     args = ap.parse_args()
 
     rgb = np.asarray(Image.open(args.image).convert("RGB"))
@@ -217,7 +226,7 @@ def main():
 
     panels = [("Input", rgb)]
     for task in tasks:
-        field = model.run(rgb, task, phrase=args.phrase)
+        field = model.run(rgb, task, phrase=args.phrase, tta=args.tta)
         vis = colorize(task, field, rgb)
         if vis.shape[:2] != (H0, W0):
             vis = np.asarray(Image.fromarray(vis).resize((W0, H0), Image.LANCZOS))

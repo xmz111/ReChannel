@@ -2,7 +2,7 @@
 # diffusers >= 0.39 is required for Flux2KleinPipeline (FLUX.2-Klein support).
 torch>=2.5
 torchvision
-diffusers>=0.39
+diffusers==0.39.0   # Flux2KleinPipeline; pinned to the tested release (API moves fast)
 transformers>=4.45
 safetensors>=0.4
 huggingface_hub>=0.25

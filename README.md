@@ -41,8 +41,9 @@ python infer.py --image assets/demo_input.jpg \
 - `--tasks`: any subset of `depth, normal, matting, refseg`.
 - `--phrase`: the referring expression used by `refseg` (text-conditioned).
 - depth / normal / matting run at aspect-preserving native resolution
-  (long side clamped to 512–2048, no stretch) with horizontal-flip TTA; refseg
-  runs at 512² (its training resolution).
+  (long side clamped to 512–2048, no stretch) with horizontal-flip TTA by
+  default (two forward passes, averaged); pass `--no-tta` for a strict single
+  forward pass. refseg runs at 512² (its training resolution), single pass.
 
 ## How it works (per task)
 
