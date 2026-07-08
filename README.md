@@ -2,6 +2,8 @@
 
 **From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models**
 
+[![arXiv](https://img.shields.io/badge/arXiv-2607.06553-b31b1b.svg)](https://arxiv.org/abs/2607.06553)
+
 ReChannel reads dense prediction targets out of a FLUX-Klein text-to-image DiT
 with lightweight per-task LoRA adapters on the (otherwise frozen) backbone.
 A pretrained DiT already organizes an RGB image into a patch-aligned spatial token
@@ -72,9 +74,9 @@ licenses; please review them before use.
 
 ```bibtex
 @article{wang2026rechannel,
-  title   = {From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models},
-  author  = {Wang, Zanyi and Lin, Xin and Li, Haodong and Jiang, Dengyang and Li, Yijiang and Xie, Pengtao},
-  journal = {arXiv preprint},
-  year    = {2026}
+  title={From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models},
+  author={Wang, Zanyi and Lin, Xin and Li, Haodong and Jiang, Dengyang and Li, Yijiang and Xie, Pengtao},
+  journal={arXiv preprint arXiv:2607.06553},
+  year={2026}
 }
 ```
