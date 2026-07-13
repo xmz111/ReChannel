@@ -65,6 +65,10 @@ from the adapted token field, not the head.
 - Pose (multi-channel keypoint heatmaps + person detection) is not included in
   this minimal demo; see the paper for the full recipe.
 
+## Acknowledgements
+
+We thank Google's TPU Research Cloud (TRC) program for granting us access to Cloud TPUs.
+
 ## License
 
 Code in this repository is released under the MIT License (see `LICENSE`).
@@ -76,7 +80,7 @@ licenses; please review them before use.
 ```bibtex
 @article{wang2026rechannel,
   title={From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models},
-  author={Wang, Zanyi and Lin, Xin and Li, Haodong and Jiang, Dengyang and Li, Yijiang and Xie, Pengtao},
+  author={Wang, Zanyi and Lin, Xin and Li, Haodong and Jiang, Dengyang and Li, Yijiang},
   journal={arXiv preprint arXiv:2607.06553},
   year={2026}
 }
