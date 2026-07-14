@@ -3,6 +3,8 @@
 **From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models**
 
 [![arXiv](https://img.shields.io/badge/arXiv-2607.06553-b31b1b.svg)](https://arxiv.org/abs/2607.06553)
+[![Hugging Face](https://img.shields.io/badge/🤗%20Models-ReChannel-yellow)](https://huggingface.co/xmz111/ReChannel)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ReChannel reads dense prediction targets out of a FLUX-Klein text-to-image DiT
 with lightweight per-task LoRA adapters on the (otherwise frozen) backbone.
@@ -17,6 +19,12 @@ target-side VAE decoder). Only the task LoRA and the linear head are trained.
 > One input image → depth, surface normal, matting, and referring segmentation
 > (`"the right couch"`), all read out from the same token field by a token-local linear
 > head. (Saliency and pose use the same recipe and are shown in the paper.)
+
+## News
+
+- **[2026-07]** Paper, model weights, and PyTorch inference demo released.
+- **[Planned]** Full training pipeline, and task configurations will be released around the end of July.
+
 
 ## Install
 
