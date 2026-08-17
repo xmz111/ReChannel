@@ -1,11 +1,15 @@
 # Tested stack (2026-07): torch 2.5.0, diffusers 0.39.0, transformers 5.13.0.
 # diffusers >= 0.39 is required for Flux2KleinPipeline (FLUX.2-Klein support).
-torch>=2.5
-torchvision
-diffusers==0.39.0   # Flux2KleinPipeline; pinned to the tested release (API moves fast)
+torch==2.5.1
+torchvision==0.20.1
+diffusers==0.39.0
 transformers>=4.45
+peft>=0.14
 safetensors>=0.4
 huggingface_hub>=0.25
 numpy
 pillow
 matplotlib
+opencv-python-headless==4.10.0.84
+pyarrow
+pycocotools
