@@ -63,6 +63,7 @@
 
   Native PyTorch training for depth, normal, matting, and refseg:
 
+```
   # single GPU
   python training/train.py --task normal --data-root /path/to/data
 
@@ -72,7 +73,7 @@
 
   Training datasets are not included in this repository. See
   training/train.py for the expected local data layout.
-
+```
   ## Notes
 
   - The repository includes an inference demo and compact 4B training code.
