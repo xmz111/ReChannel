@@ -195,7 +195,7 @@ Native PyTorch training is provided for:
 ### Single GPU
 
 ```bash
-python training/train.py \
+python train.py \
   --task normal \
   --data-root /path/to/data
 ```
@@ -203,7 +203,7 @@ python training/train.py \
 ### Multi-GPU
 
 ```bash
-torchrun --nproc_per_node=2 training/train.py \
+torchrun --nproc_per_node=2 train.py \
   --task normal \
   --data-root /path/to/data
 ```
