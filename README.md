@@ -34,7 +34,7 @@
   (you may need to accept its license and huggingface-cli login) and the per-task
   LoRA + linear heads (xmz111/ReChannel) are downloaded automatically
   from the Hugging Face Hub on first run.
-```
+ ```
 
   ## Quick start (single image, all tasks)
 
@@ -63,7 +63,7 @@
 
   Native PyTorch training for depth, normal, matting, and refseg:
 
-```
+ ```
   # single GPU
   python training/train.py --task normal --data-root /path/to/data
 
@@ -73,7 +73,7 @@
 
   Training datasets are not included in this repository. See
   training/train.py for the expected local data layout.
-```
+ ```
   ## Notes
 
   - The repository includes an inference demo and compact 4B training code.
