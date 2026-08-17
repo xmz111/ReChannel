@@ -34,6 +34,7 @@
   (you may need to accept its license and huggingface-cli login) and the per-task
   LoRA + linear heads (xmz111/ReChannel) are downloaded automatically
   from the Hugging Face Hub on first run.
+```
 
   ## Quick start (single image, all tasks)
 
