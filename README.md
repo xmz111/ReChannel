@@ -1,95 +1,103 @@
 # ReChannel
 
-**From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models**
+  **From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models**
 
-[![arXiv](https://img.shields.io/badge/arXiv-2607.06553-b31b1b.svg)](https://arxiv.org/abs/2607.06553)
-[![Hugging Face](https://img.shields.io/badge/🤗%20Models-ReChannel-yellow)](https://huggingface.co/xmz111/ReChannel)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+  [![arXiv](https://img.shields.io/badge/arXiv-2607.06553-b31b1b.svg)](https://arxiv.org/abs/2607.06553)
+  [![Hugging Face](https://img.shields.io/badge/🤗%20Models-ReChannel-yellow)](https://huggingface.co/xmz111/ReChannel)
+  [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-ReChannel reads dense prediction targets out of a FLUX-Klein text-to-image DiT
-with lightweight per-task LoRA adapters on the (otherwise frozen) backbone.
-A pretrained DiT already organizes an RGB image into a patch-aligned spatial token
-field; each token is a spatial carrier whose channels we simply **re-channel** from
-RGB appearance to task-native quantities with a **token-local linear head** (~33K
-params for scalar tasks, one `nn.Linear`, no convolution / no upsampling / no
-target-side VAE decoder). Only the task LoRA and the linear head are trained.
+  ReChannel reads dense prediction targets out of a FLUX-Klein text-to-image DiT
+  with lightweight per-task LoRA adapters on the (otherwise frozen) backbone.
+  A pretrained DiT already organizes an RGB image into a patch-aligned spatial token
+  field; each token is a spatial carrier whose channels we simply **re-channel** from
+  RGB appearance to task-native quantities with a **token-local linear head** (~33K
+  params for scalar tasks, one `nn.Linear`, no convolution / no upsampling / no
+  target-side VAE decoder). Only the task LoRA and the linear head are trained.
 
-![demo](assets/demo.png)
+  ![demo](assets/demo.png)
 
-> One input image → depth, surface normal, matting, and referring segmentation
-> (`"the right couch"`), all read out from the same token field by a token-local linear
-> head. (Saliency and pose use the same recipe and are shown in the paper.)
+  > One input image → depth, surface normal, matting, and referring segmentation
+  > (`"the right couch"`), all read out from the same token field by a token-local linear
+  > head. (Saliency and pose use the same recipe and are shown in the paper.)
 
-## News
+  ## News
 
-- **[2026-07]** Paper, model weights, and PyTorch inference demo released.
-- **[Planned]** Full training pipeline, and task configurations will be released around the end of July.
+  - **[2026-07]** Paper, model weights, and PyTorch inference demo released.
+  - **[2026-08]** Native PyTorch 4B training code and task configurations released.
 
+  ## Install
 
-## Install
+  ```bash
+  pip install -r requirements.txt
 
-```bash
-pip install -r requirements.txt
-```
+  Requires a CUDA GPU. The frozen backbone black-forest-labs/FLUX.2-klein-base-4B
+  (you may need to accept its license and huggingface-cli login) and the per-task
+  LoRA + linear heads (xmz111/ReChannel) are downloaded automatically
+  from the Hugging Face Hub on first run.
 
-Requires a CUDA GPU. The frozen backbone `black-forest-labs/FLUX.2-klein-base-4B`
-(you may need to accept its license and `huggingface-cli login`) and the per-task
-LoRA + linear heads (`xmz111/ReChannel`) are downloaded automatically
-from the Hugging Face Hub on first run.
+  ## Quick start (single image, all tasks)
 
-## Quick start (single image, all tasks)
+  python infer.py --image assets/demo_input.jpg \
+      --tasks depth,normal,matting,refseg \
+      --phrase "the right couch" \
+      --out out.png
 
-```bash
-python infer.py --image assets/demo_input.jpg \
-    --tasks depth,normal,matting,refseg \
-    --phrase "the right couch" \
-    --out out.png
-```
+  - --tasks: any subset of depth, normal, matting, refseg.
+  - --phrase: the referring expression used by refseg (text-conditioned).
+  - depth / normal / matting run at aspect-preserving native resolution
+    (long side clamped to 512–2048, no stretch) with horizontal-flip TTA by
+    default (two forward passes, averaged); pass --no-tta for a strict single
+    forward pass. refseg runs at 512² (its training resolution), single pass.
 
-- `--tasks`: any subset of `depth, normal, matting, refseg`.
-- `--phrase`: the referring expression used by `refseg` (text-conditioned).
-- depth / normal / matting run at aspect-preserving native resolution
-  (long side clamped to 512–2048, no stretch) with horizontal-flip TTA by
-  default (two forward passes, averaged); pass `--no-tta` for a strict single
-  forward pass. refseg runs at 512² (its training resolution), single pass.
+  ## How it works (per task)
 
-## How it works (per task)
+  RGB --VAE encoder--> latent tokens --DiT (frozen θ + task LoRA Δt, σ=0)--> token field Z_t
+      --  Ŷ = reshape( W_t · z_ij + b_t ) ∈ R^{p×p×K}  --tile over the plane-->  dense field
 
-```
-RGB --VAE encoder--> latent tokens --DiT (frozen θ + task LoRA Δt, σ=0)--> token field Z_t
-    --  Ŷ = reshape( W_t · z_ij + b_t ) ∈ R^{p×p×K}  --tile over the plane-->  dense field
-```
+  The backbone is frozen; only a lightweight per-task LoRA adapter and the linear
+  head are trained. The head has no spatial mixing — all spatial structure comes
+  from the adapted token field, not the head.
 
-The backbone is frozen; only a lightweight per-task LoRA adapter and the linear
-head are trained. The head has no spatial mixing — all spatial structure comes
-from the adapted token field, not the head.
+  ## Training (4B)
 
-## Notes
+  Native PyTorch training for depth, normal, matting, and refseg:
 
-- This repository is an **inference / qualitative-demo** release. It is not the
-  benchmark-evaluation pipeline used to produce the paper's tables.
-- Head size is `p²·Kₜ × 128`: 33K for scalar tasks (K=1), 99K for surface normals
-  (K=3).
-- Pose (multi-channel keypoint heatmaps + person detection) is not included in
-  this minimal demo; see the paper for the full recipe.
+  # single GPU
+  python training/train.py --task normal --data-root /path/to/data
 
-## Acknowledgements
+  # multi-GPU
+  torchrun --nproc_per_node=2 training/train.py \
+    --task normal --data-root /path/to/data
 
-We thank Google's TPU Research Cloud (TRC) program for granting us access to Cloud TPUs.
+  Training datasets are not included in this repository. See
+  training/train.py for the expected local data layout.
 
-## License
+  ## Notes
 
-Code in this repository is released under the MIT License (see `LICENSE`).
-The FLUX-Klein backbone and the released weights are subject to their own
-licenses; please review them before use.
+  - The repository includes an inference demo and compact 4B training code.
+    Benchmark evaluation scripts and datasets are not included.
 
-## Citation
+  - Head size is p²·Kₜ × 128: 33K for scalar tasks (K=1), 99K for surface normals
+    (K=3).
 
-```bibtex
-@article{wang2026rechannel,
-  title={From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models},
-  author={Wang, Zanyi and Lin, Xin and Li, Haodong and Jiang, Dengyang and Li, Yijiang},
-  journal={arXiv preprint arXiv:2607.06553},
-  year={2026}
-}
-```
+  - Pose (multi-channel keypoint heatmaps + person detection) is not included in
+    this minimal demo; see the paper for the full recipe.
+
+  ## Acknowledgements
+
+  We thank Google's TPU Research Cloud (TRC) program for granting us access to Cloud TPUs.
+
+  ## License
+
+  Code in this repository is released under the MIT License (see LICENSE).
+  The FLUX-Klein backbone and the released weights are subject to their own
+  licenses; please review them before use.
+
+  ## Citation
+
+  @article{wang2026rechannel,
+    title={From RGB Generation to Dense Field Readout: Pixel-Space Dense Prediction with Text-to-Image Models},
+    author={Wang, Zanyi and Lin, Xin and Li, Haodong and Jiang, Dengyang and Li, Yijiang},
+    journal={arXiv preprint arXiv:2607.06553},
+    year={2026}
+  }
